@@ -1,0 +1,10 @@
+[
+  "backend/tests/test_api.py::test_admin_dashboard_and_users",
+  "backend/tests/test_api.py::test_categories_and_types",
+  "backend/tests/test_api.py::test_found_items_filtering",
+  "backend/tests/test_api.py::test_lost_reports_flow",
+  "backend/tests/test_security.py::test_claims_and_notifications_workflow",
+  "backend/tests/test_security.py::test_critical_security_return_information_leakage",
+  "backend/tests/test_security.py::test_health_check",
+  "backend/tests/test_security.py::test_multi_school_isolation"
+]

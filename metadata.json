@@ -1,0 +1,7 @@
+{
+  "name": "Lost & Found",
+  "description": "ระบบจัดการของหายและของที่พบสำหรับโรงเรียนแบบครบวงจร (School Lost & Found Platform)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
