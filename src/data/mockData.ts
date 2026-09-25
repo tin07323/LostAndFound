@@ -2,9 +2,9 @@ import { Category, ItemType, School, Profile, FoundItem, LostReport, Claim, Retu
 
 export const INITIAL_SCHOOLS: School[] = [
   {
-    id: 's1111111-aaaa-1111-aaaa-111111111111',
-    name: 'ระบบของหายในโรงเรียน (Lost & Found)',
-    join_code: 'SCHOOL-2026',
+    id: 'a1111111-0000-0000-0000-000000000001',
+    name: 'โรงเรียนเตรียมอุดมศึกษาน้อมเกล้า (TPN-2026)',
+    join_code: 'TPN-2026',
     logo_url: '',
     primary_color: '#2563EB',
     banner_url: '',

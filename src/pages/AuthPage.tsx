@@ -34,7 +34,19 @@ export const AuthPage: React.FC = () => {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpRole, setSignUpRole] = useState<UserRole>('STUDENT');
-  const [signUpSchoolCode, setSignUpSchoolCode] = useState(currentSchool.join_code || 'SCHOOL-2026');
+  const [signUpSchoolCode, setSignUpSchoolCode] = useState(
+    schools.find((s) => s.join_code === 'TPN-2026')?.join_code ||
+      currentSchool.join_code ||
+      'TPN-2026'
+  );
+
+  // Auto-sync school code if schools list updates from Supabase
+  React.useEffect(() => {
+    if (!signUpSchoolCode || signUpSchoolCode === 'SCHOOL-2026') {
+      const preferred = schools.find((s) => s.join_code === 'TPN-2026')?.join_code || currentSchool.join_code;
+      if (preferred) setSignUpSchoolCode(preferred);
+    }
+  }, [schools, currentSchool]);
 
   // Status & Feedback
   const [loading, setLoading] = useState(false);
@@ -385,9 +397,11 @@ export const AuthPage: React.FC = () => {
                   <label className="text-xs font-semibold text-slate-300">
                     รหัสประจำโรงเรียน (School Code)
                   </label>
-                  <span className="text-[11px] text-blue-400 font-mono">
-                    รหัสปัจจุบัน: {currentSchool.join_code}
-                  </span>
+                  {signUpRole === 'ADMIN' && (
+                    <span className="text-[11px] text-amber-400 font-medium">
+                      พิมพ์รหัสใหม่เพื่อสร้างโรงเรียนได้
+                    </span>
+                  )}
                 </div>
                 <div className="relative rounded-2xl shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -398,12 +412,40 @@ export const AuthPage: React.FC = () => {
                     required
                     value={signUpSchoolCode}
                     onChange={(e) => setSignUpSchoolCode(e.target.value.toUpperCase())}
-                    placeholder={`เช่น ${currentSchool.join_code || 'SCHOOL-2026'}`}
+                    placeholder="เช่น TPN-2026 หรือ SCHOOL-2026"
                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white font-mono placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
-                <p className="mt-1.5 text-[11px] text-slate-500">
-                  นักเรียนจะสามารถเห็นและจัดการเฉพาะของหายภายในโรงเรียนที่มีรหัสตรงกันเท่านั้น
+
+                {/* Quick Select available schools */}
+                {schools.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-[11px] text-slate-400 block mb-1">
+                      คลิกเพื่อเลือกโรงเรียนที่มีในระบบ:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {schools.map((s) => (
+                        <button
+                          key={s.id || s.join_code}
+                          type="button"
+                          onClick={() => setSignUpSchoolCode(s.join_code)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono transition border ${
+                            signUpSchoolCode === s.join_code
+                              ? 'bg-blue-600/30 border-blue-500 text-blue-300 font-bold'
+                              : 'bg-slate-800/60 border-slate-700/80 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          {s.join_code} {s.name && !s.name.includes(s.join_code) ? `(${s.name.slice(0, 18)})` : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-2 text-[11px] text-slate-400 leading-relaxed">
+                  {signUpRole === 'STUDENT'
+                    ? '💡 สำหรับนักเรียน: ใส่รหัส TPN-2026 เพื่อเข้าร่วมโรงเรียนเตรียมอุดมศึกษาน้อมเกล้า'
+                    : '💡 สำหรับแอดมิน: ใส่รหัส TPN-2026 เพื่อเข้าดูแลโรงเรียน หรือใส่รหัสใหม่เพื่อสร้างโรงเรียนใหม่'}
                 </p>
               </div>
 

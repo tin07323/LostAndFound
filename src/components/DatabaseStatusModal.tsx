@@ -24,6 +24,7 @@ import {
   supabaseAnonKey
 } from '../lib/supabase';
 import schemaSql from '../../supabase/schema.sql?raw';
+import fixPermissionsSql from '../../supabase/fix_permissions.sql?raw';
 
 interface Props {
   isOpen: boolean;
@@ -194,6 +195,37 @@ export const DatabaseStatusModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-blue-600' : ''}`} />
                   <span>{isLoading ? 'กำลังตรวจ...' : 'ตรวจใหม่'}</span>
                 </button>
+              </div>
+
+              {/* RLS Permission & TPN-2026 Quick Fix Banner */}
+              <div className="p-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+                    <Shield className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>วิธีแก้ปัญหา: ตารางใน Supabase ว่างเปล่า หรือสิทธิ์ RLS ถูกบล็อค</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(fixPermissionsSql, 'fix_sql')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition shrink-0"
+                  >
+                    {copiedKey === 'fix_sql' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>คัดลอก SQL เรียบร้อย!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>คัดลอก SQL แก้ไขสิทธิ์</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  เนื่องจากใน Supabase มีระบบความปลอดภัย (RLS) ล็อคไว้ ทำให้การบันทึกข้อมูลจากหน้าเว็บถูกปฏิเสธ (Supabase จึงว่างเปล่า) 
+                  เพียงกดปุ่ม <strong>"คัดลอก SQL แก้ไขสิทธิ์"</strong> ด้านบน แล้วนำไปวางใน <strong>Supabase -&gt; SQL Editor -&gt; กด Run</strong> ระบบจะปลดล็อคให้บันทึกข้อมูลลงฐานข้อมูลได้ทันที 100% พร้อมเพิ่มโรงเรียน <strong>TPN-2026</strong> ให้ทันทีครับ!
+                </p>
               </div>
 
               {/* Environment Parameters Grid */}

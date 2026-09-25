@@ -24,6 +24,25 @@ import {
   INITIAL_NOTIFICATIONS,
   INITIAL_AUDIT_LOGS
 } from '../data/mockData';
+import {
+  ensureUuid,
+  fetchSchoolsFromSupabase,
+  fetchProfilesFromSupabase,
+  fetchCategoriesFromSupabase,
+  fetchItemTypesFromSupabase,
+  fetchFoundItemsFromSupabase,
+  fetchLostReportsFromSupabase,
+  fetchClaimsFromSupabase,
+  fetchReturnInfoFromSupabase,
+  saveSchoolToSupabase,
+  saveProfileToSupabase,
+  saveFoundItemToSupabase,
+  deleteFoundItemFromSupabase,
+  saveLostReportToSupabase,
+  deleteLostReportFromSupabase,
+  saveClaimToSupabase,
+  saveReturnInfoToSupabase
+} from '../lib/supabaseService';
 
 interface AppContextType {
   currentUser: Profile | null;
@@ -142,8 +161,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
   const [currentSchoolId, setCurrentSchoolId] = useState<string>(
-    initialLoaded?.currentSchoolId || 's1111111-aaaa-1111-aaaa-111111111111'
+    initialLoaded?.currentSchoolId || INITIAL_SCHOOLS[0]?.id || 'a1111111-0000-0000-0000-000000000001'
   );
+
+  // Sync with Supabase on startup
+  useEffect(() => {
+    let isMounted = true;
+    async function loadFromSupabase() {
+      try {
+        const [
+          remoteSchools,
+          remoteProfiles,
+          remoteCategories,
+          remoteItemTypes,
+          remoteFoundItems,
+          remoteLostReports,
+          remoteClaims,
+          remoteReturnInfo
+        ] = await Promise.all([
+          fetchSchoolsFromSupabase(),
+          fetchProfilesFromSupabase(),
+          fetchCategoriesFromSupabase(),
+          fetchItemTypesFromSupabase(),
+          fetchFoundItemsFromSupabase(),
+          fetchLostReportsFromSupabase(),
+          fetchClaimsFromSupabase(),
+          fetchReturnInfoFromSupabase()
+        ]);
+
+        if (!isMounted) return;
+
+        if (remoteSchools && remoteSchools.length > 0) {
+          setSchools((prev) => {
+            const map = new Map<string, School>();
+            prev.forEach((s) => map.set(s.join_code.toUpperCase(), s));
+            remoteSchools.forEach((s) => map.set(s.join_code.toUpperCase(), s));
+            return Array.from(map.values());
+          });
+        }
+        if (remoteProfiles && remoteProfiles.length > 0) {
+          setProfiles((prev) => {
+            const map = new Map<string, Profile>();
+            prev.forEach((p) => map.set(p.email.toLowerCase(), p));
+            remoteProfiles.forEach((p) => map.set(p.email.toLowerCase(), p));
+            return Array.from(map.values());
+          });
+        }
+        if (remoteCategories && remoteCategories.length > 0) {
+          setCategories(remoteCategories);
+        }
+        if (remoteItemTypes && remoteItemTypes.length > 0) {
+          setItemTypes(remoteItemTypes);
+        }
+        if (remoteFoundItems && remoteFoundItems.length > 0) {
+          setFoundItems(remoteFoundItems);
+        }
+        if (remoteLostReports && remoteLostReports.length > 0) {
+          setLostReports(remoteLostReports);
+        }
+        if (remoteClaims && remoteClaims.length > 0) {
+          setClaims(remoteClaims);
+        }
+        if (remoteReturnInfo && remoteReturnInfo.length > 0) {
+          setReturnInfoList(remoteReturnInfo);
+        }
+      } catch (err) {
+        console.warn('Supabase initial fetch warning:', err);
+      }
+    }
+
+    loadFromSupabase();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -224,14 +315,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ' };
     }
 
+    const inputCode = data.schoolCode.trim().toUpperCase();
     let matchedSchool = schools.find(
-      (s) => s.join_code.trim().toUpperCase() === data.schoolCode.trim().toUpperCase()
+      (s) => s.join_code.trim().toUpperCase() === inputCode
     );
+
+    // If not found in memory, re-fetch schools from Supabase
+    if (!matchedSchool) {
+      const freshSchools = await fetchSchoolsFromSupabase();
+      if (freshSchools && freshSchools.length > 0) {
+        setSchools((prev) => {
+          const map = new Map<string, School>();
+          prev.forEach((s) => map.set(s.join_code.toUpperCase(), s));
+          freshSchools.forEach((s) => map.set(s.join_code.toUpperCase(), s));
+          return Array.from(map.values());
+        });
+        matchedSchool = freshSchools.find(
+          (s) => s.join_code.trim().toUpperCase() === inputCode
+        );
+      }
+    }
+
     if (!matchedSchool && data.role === 'ADMIN') {
       matchedSchool = {
-        id: `s-${Date.now()}`,
-        name: `โรงเรียน (${data.schoolCode.trim().toUpperCase()})`,
-        join_code: data.schoolCode.trim().toUpperCase(),
+        id: ensureUuid(),
+        name: inputCode === 'TPN-2026'
+          ? 'โรงเรียนเตรียมอุดมศึกษาน้อมเกล้า (TPN-2026)'
+          : `โรงเรียน (${inputCode})`,
+        join_code: inputCode,
         primary_color: '#2563EB',
         default_pickup_location: 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
         meeting_locations: [
@@ -244,12 +355,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updated_at: new Date().toISOString()
       };
       setSchools((prev) => [...prev, matchedSchool!]);
+      saveSchoolToSupabase(matchedSchool);
     } else if (!matchedSchool) {
-      return { success: false, message: `รหัสโรงเรียน "${data.schoolCode}" ไม่ถูกต้อง (รหัสเริ่มต้นของระบบคือ ${schools[0]?.join_code || 'SCHOOL-2026'})` };
+      const availableList = schools.map((s) => s.join_code).filter(Boolean);
+      return {
+        success: false,
+        message: `ไม่พบโรงเรียนที่มีรหัส "${data.schoolCode}" ในระบบ กรุณาตรวจสอบรหัสจากคุณครู หรือให้คุณครูลงทะเบียนเป็นแอดมินเพื่อสร้างโรงเรียนก่อน (โรงเรียนที่มีในระบบ: ${availableList.join(', ') || 'TPN-2026'})`
+      };
     }
 
     const newProfile: Profile = {
-      id: `u-${Date.now()}`,
+      id: ensureUuid(),
       email: cleanEmail,
       display_name: data.name.trim(),
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
@@ -264,6 +380,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentSchoolId(matchedSchool.id);
     setCurrentUserId(newProfile.id);
     localStorage.setItem('lnf_current_user_id', newProfile.id);
+
+    // Save to Supabase
+    saveProfileToSupabase(newProfile);
+    if (matchedSchool) {
+      saveSchoolToSupabase(matchedSchool);
+    }
 
     return { success: true, message: 'สมัครสมาชิกและเข้าสู่ระบบสำเร็จ', user: newProfile };
   };
@@ -326,7 +448,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const itype = itemTypes.find((t) => t.id === data.item_type_id);
 
     const newItem: FoundItem = {
-      id: `item-found-${Date.now()}`,
+      id: ensureUuid(),
       school_id: currentSchool.id,
       posted_by: currentUser.id,
       poster_name: currentUser.display_name,
@@ -347,6 +469,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setFoundItems((prev) => [newItem, ...prev]);
+    saveFoundItemToSupabase(newItem);
 
     // Audit log
     const log: AuditLog = {
@@ -367,12 +490,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateFoundItem = (itemId: string, updates: Partial<FoundItem>) => {
     setFoundItems((prev) =>
-      prev.map((it) => (it.id === itemId ? { ...it, ...updates, updated_at: new Date().toISOString() } : it))
+      prev.map((it) => {
+        if (it.id === itemId) {
+          const updated = { ...it, ...updates, updated_at: new Date().toISOString() };
+          saveFoundItemToSupabase(updated);
+          return updated;
+        }
+        return it;
+      })
     );
   };
 
   const deleteFoundItem = (itemId: string) => {
     setFoundItems((prev) => prev.filter((it) => it.id !== itemId));
+    deleteFoundItemFromSupabase(itemId);
   };
 
   const createLostReport = (data: any) => {
@@ -380,7 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const itype = itemTypes.find((t) => t.id === data.item_type_id);
 
     const newReport: LostReport = {
-      id: `report-lost-${Date.now()}`,
+      id: ensureUuid(),
       school_id: currentSchool.id,
       reported_by: currentUser.id,
       reporter_name: currentUser.display_name,
@@ -401,17 +532,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setLostReports((prev) => [newReport, ...prev]);
+    saveLostReportToSupabase(newReport);
     return newReport;
   };
 
   const updateLostReport = (reportId: string, updates: Partial<LostReport>) => {
     setLostReports((prev) =>
-      prev.map((rep) => (rep.id === reportId ? { ...rep, ...updates, updated_at: new Date().toISOString() } : rep))
+      prev.map((rep) => {
+        if (rep.id === reportId) {
+          const updated = { ...rep, ...updates, updated_at: new Date().toISOString() };
+          saveLostReportToSupabase(updated);
+          return updated;
+        }
+        return rep;
+      })
     );
   };
 
   const deleteLostReport = (reportId: string) => {
     setLostReports((prev) => prev.filter((rep) => rep.id !== reportId));
+    deleteLostReportFromSupabase(reportId);
   };
 
   const submitClaim = (itemId: string, verificationAnswer: string) => {
@@ -424,7 +564,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const newClaim: Claim = {
-      id: `claim-${Date.now()}`,
+      id: ensureUuid(),
       item_id: itemId,
       item_name: item.item_name,
       claimant_id: currentUser.id,
@@ -437,6 +577,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setClaims((prev) => [newClaim, ...prev]);
+    saveClaimToSupabase(newClaim);
 
     // Update item status
     updateFoundItem(itemId, { status: 'CLAIM_PENDING' });
@@ -479,18 +620,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const item = foundItems.find((i) => i.id === claim.item_id);
 
     setClaims((prev) =>
-      prev.map((c) =>
-        c.id === claimId
-          ? {
-              ...c,
-              status,
-              rejection_reason: rejectionReason,
-              reviewed_by: currentUser.id,
-              reviewed_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id === claimId) {
+          const updated: Claim = {
+            ...c,
+            status,
+            rejection_reason: rejectionReason,
+            reviewed_by: currentUser.id,
+            reviewed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          saveClaimToSupabase(updated);
+          return updated;
+        }
+        return c;
+      })
     );
 
     if (item) {
@@ -576,7 +720,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setReturnInfoList(updated);
     } else {
       record = {
-        id: `return-${Date.now()}`,
+        id: ensureUuid(),
         claim_id: claimId,
         pickup_location: data.pickup_location,
         pickup_date: data.pickup_date,
@@ -589,6 +733,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       setReturnInfoList((prev) => [record, ...prev]);
     }
+
+    saveReturnInfoToSupabase(record);
 
     if (item) {
       updateFoundItem(item.id, { status: 'READY_FOR_PICKUP' });
