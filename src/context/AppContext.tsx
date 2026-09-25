@@ -25,7 +25,8 @@ import {
 } from '../data/mockData';
 
 interface AppContextType {
-  currentUser: Profile;
+  currentUser: Profile | null;
+  isAuthenticated: boolean;
   currentSchool: School;
   schools: School[];
   profiles: Profile[];
@@ -36,6 +37,9 @@ interface AppContextType {
   claims: Claim[];
   notifications: Notification[];
   auditLogs: AuditLog[];
+  login: (email: string, password?: string) => Promise<{ success: boolean; message: string; user?: Profile }>;
+  signup: (data: { name: string; email: string; password?: string; role: UserRole; schoolCode: string }) => Promise<{ success: boolean; message: string; user?: Profile }>;
+  logout: () => void;
   switchUser: (userId: string) => void;
   switchSchool: (schoolId: string) => void;
   joinSchool: (joinCode: string) => { success: boolean; message: string };
@@ -88,9 +92,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [notifications, setNotifications] = useState<Notification[]>(initialLoaded?.notifications || INITIAL_NOTIFICATIONS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialLoaded?.auditLogs || INITIAL_AUDIT_LOGS);
 
-  const [currentUserId, setCurrentUserId] = useState<string>(
-    initialLoaded?.currentUserId || 'u-student-a-0002' // Default to Student A
-  );
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('lnf_current_user_id');
+    } catch {
+      return null;
+    }
+  });
   const [currentSchoolId, setCurrentSchoolId] = useState<string>(
     initialLoaded?.currentSchoolId || 's1111111-aaaa-1111-aaaa-111111111111'
   );
@@ -108,7 +116,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       returnInfoList,
       notifications,
       auditLogs,
-      currentUserId,
       currentSchoolId
     };
     try {
@@ -127,17 +134,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     returnInfoList,
     notifications,
     auditLogs,
-    currentUserId,
     currentSchoolId
   ]);
 
-  const currentUser = profiles.find((p) => p.id === currentUserId) || profiles[0];
+  const currentUser = currentUserId ? profiles.find((p) => p.id === currentUserId) || null : null;
+  const isAuthenticated = Boolean(currentUser);
   const currentSchool = schools.find((s) => s.id === currentSchoolId) || schools[0];
+
+  const login = async (email: string, _password?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const found = profiles.find((p) => p.email.toLowerCase() === cleanEmail);
+    if (!found) {
+      return { success: false, message: 'ไม่พบบัญชีผู้ใช้งานด้วยอีเมลนี้ กรุณาสมัครสมาชิกใหม่' };
+    }
+    if (found.status === 'SUSPENDED') {
+      return { success: false, message: 'บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อฝ่ายกิจการนักเรียน' };
+    }
+    setCurrentUserId(found.id);
+    localStorage.setItem('lnf_current_user_id', found.id);
+    return { success: true, message: `ยินดีต้อนรับคุณ ${found.display_name}`, user: found };
+  };
+
+  const signup = async (data: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    schoolCode: string;
+  }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    if (profiles.some((p) => p.email.toLowerCase() === cleanEmail)) {
+      return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ' };
+    }
+
+    const matchedSchool = schools.find(
+      (s) => s.join_code.trim().toUpperCase() === data.schoolCode.trim().toUpperCase()
+    );
+    if (!matchedSchool) {
+      return { success: false, message: `รหัสโรงเรียน "${data.schoolCode}" ไม่ถูกต้อง (ตัวอย่าง: TPN-2026)` };
+    }
+
+    const newProfile: Profile = {
+      id: `u-${Date.now()}`,
+      email: cleanEmail,
+      display_name: data.name.trim(),
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
+      role: data.role,
+      status: 'ACTIVE',
+      active_schools: [matchedSchool.id],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    setProfiles((prev) => [newProfile, ...prev]);
+    setCurrentSchoolId(matchedSchool.id);
+    setCurrentUserId(newProfile.id);
+    localStorage.setItem('lnf_current_user_id', newProfile.id);
+
+    return { success: true, message: 'สมัครสมาชิกและเข้าสู่ระบบสำเร็จ', user: newProfile };
+  };
+
+  const logout = () => {
+    setCurrentUserId(null);
+    localStorage.removeItem('lnf_current_user_id');
+  };
 
   const switchUser = (userId: string) => {
     const found = profiles.find((p) => p.id === userId);
     if (found) {
       setCurrentUserId(userId);
+      localStorage.setItem('lnf_current_user_id', userId);
     }
   };
 
@@ -578,6 +644,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetAllData = () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('lnf_current_user_id');
     setSchools(INITIAL_SCHOOLS);
     setProfiles(INITIAL_PROFILES);
     setCategories(INITIAL_CATEGORIES);
@@ -588,7 +655,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReturnInfoList(INITIAL_RETURN_INFO);
     setNotifications(INITIAL_NOTIFICATIONS);
     setAuditLogs(INITIAL_AUDIT_LOGS);
-    setCurrentUserId('u-student-a-0002');
+    setCurrentUserId(null);
     setCurrentSchoolId('s1111111-aaaa-1111-aaaa-111111111111');
   };
 
@@ -596,6 +663,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
         currentSchool,
         schools,
         profiles,
@@ -606,6 +674,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         claims,
         notifications,
         auditLogs,
+        login,
+        signup,
+        logout,
         switchUser,
         switchSchool,
         joinSchool,

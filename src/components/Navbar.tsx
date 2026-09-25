@@ -16,9 +16,12 @@ import {
   CheckCircle2,
   Lock,
   Menu,
-  X
+  X,
+  Database
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { DatabaseStatusModal } from './DatabaseStatusModal';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export const Navbar: React.FC = () => {
   const {
@@ -27,7 +30,7 @@ export const Navbar: React.FC = () => {
     schools,
     profiles,
     notifications,
-    switchUser,
+    logout,
     switchSchool,
     markNotificationRead,
     markAllNotificationsRead,
@@ -42,8 +45,9 @@ export const Navbar: React.FC = () => {
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [joinMsg, setJoinMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showDbModal, setShowDbModal] = useState(false);
 
-  const userNotifs = notifications.filter((n) => n.user_id === currentUser.id);
+  const userNotifs = currentUser ? notifications.filter((n) => n.user_id === currentUser.id) : [];
   const unreadCount = userNotifs.filter((n) => !n.is_read).length;
 
   const handleJoinSchool = (e: React.FormEvent) => {
@@ -71,46 +75,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Testing Bar (Quick 1-Click Role Switcher for Autonomous Testing) */}
-      <div className="bg-slate-900 text-slate-200 text-xs px-4 py-2 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-medium text-[11px] border border-emerald-800">
-              <Sparkles className="w-3 h-3 mr-1" /> ระบบทดสอบบทบาท (1-Click Switch)
-            </span>
-            <span className="hidden sm:inline text-slate-400">สลับผู้ใช้งานเพื่อทดสอบระบบความปลอดภัย & RLS:</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {profiles.map((p) => {
-              const isCurrent = p.id === currentUser.id;
-              let roleBadge = p.role === 'ADMIN' ? '👑 อาจารย์/แอดมิน' : '🎒 นักเรียน';
-              let codeLabel = p.id.includes('student-a') ? 'Student A (ผู้พบ)' : p.id.includes('student-b') ? 'Student B (ผู้ขอรับ)' : p.id.includes('student-c') ? 'Student C (บุคคลภายนอก)' : 'Admin';
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => switchUser(p.id)}
-                  className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1 ${
-                    isCurrent
-                      ? 'bg-blue-600 text-white font-semibold shadow-sm'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                  title={p.display_name}
-                >
-                  <span>{codeLabel}</span>
-                </button>
-              );
-            })}
-            <button
-              onClick={resetAllData}
-              className="ml-2 px-2 py-1 rounded bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-200 transition text-[11px] flex items-center gap-1"
-              title="รีเซ็ตข้อมูลเริ่มต้น"
-            >
-              <RotateCcw className="w-3 h-3" /> รีเซ็ต
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -204,6 +168,20 @@ export const Navbar: React.FC = () => {
                   <span>แจ้งของหาย</span>
                 </Link>
               </div>
+
+              {/* Database Status Button */}
+              <button
+                onClick={() => setShowDbModal(true)}
+                className={`p-2 rounded-lg transition flex items-center gap-1.5 text-xs font-medium border ${
+                  isSupabaseConfigured
+                    ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                    : 'text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200'
+                }`}
+                title="คลิกเพื่อตรวจเช็คสถานะฐานข้อมูล Database"
+              >
+                <Database className="w-4 h-4 text-blue-600" />
+                <span className="hidden lg:inline">{isSupabaseConfigured ? 'Supabase' : 'LocalStorage'}</span>
+              </button>
 
               {/* Notifications dropdown trigger */}
               <div className="relative">
@@ -378,6 +356,16 @@ export const Navbar: React.FC = () => {
                         <SchoolIcon className="w-4 h-4 text-slate-400" />
                         เปลี่ยนโรงเรียน / เข้าร่วมด้วยรหัส
                       </button>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-500" />
+                        ออกจากระบบ (Sign Out)
+                      </button>
                     </div>
                   </div>
                 )}
@@ -423,6 +411,37 @@ export const Navbar: React.FC = () => {
                 + แจ้งของหาย
               </Link>
             </div>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setShowDbModal(true);
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span>สถานะฐานข้อมูล</span>
+              </span>
+              <span
+                className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                  isSupabaseConfigured
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {isSupabaseConfigured ? 'Supabase' : 'LocalStorage'}
+              </span>
+            </button>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                logout();
+              }}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span>ออกจากระบบ (Sign Out)</span>
+            </button>
           </div>
         )}
       </header>
@@ -515,6 +534,12 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Database Connection Status Modal */}
+      <DatabaseStatusModal
+        isOpen={showDbModal}
+        onClose={() => setShowDbModal(false)}
+      />
     </>
   );
 };

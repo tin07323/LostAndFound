@@ -15,11 +15,14 @@ import {
   RotateCcw,
   Search,
   Check,
-  Plus
+  Plus,
+  Database
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
 import { ClaimStatus } from '../types';
+import { DatabaseStatusModal } from '../components/DatabaseStatusModal';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export const AdminDashboardPage: React.FC = () => {
   const {
@@ -71,6 +74,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [newCatIcon, setNewCatIcon] = useState('Package');
   const [selectedCatForType, setSelectedCatForType] = useState(categories[0]?.id || '');
   const [newTypeName, setNewTypeName] = useState('');
+  const [showDbModal, setShowDbModal] = useState(false);
 
   // Protect Admin Route
   if (currentUser.role !== 'ADMIN') {
@@ -159,6 +163,23 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDbModal(true)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+                isSupabaseConfigured
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-sm'
+                  : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+              }`}
+              title="ตรวจสอบสถานะการเชื่อมต่อฐานข้อมูล"
+            >
+              <Database className="w-3.5 h-3.5 text-blue-600" />
+              <span>ตรวจสถานะ Database</span>
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  isSupabaseConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+                }`}
+              ></span>
+            </button>
             <span className="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-xs font-semibold border border-amber-200">
               รอตรวจสอบ: {pendingClaims.length} รายการ
             </span>
@@ -758,6 +779,12 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Database Connection Status Modal */}
+      <DatabaseStatusModal
+        isOpen={showDbModal}
+        onClose={() => setShowDbModal(false)}
+      />
     </div>
   );
 };

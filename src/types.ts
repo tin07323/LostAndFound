@@ -20,6 +20,7 @@ export interface Profile {
   avatar_url?: string;
   role: UserRole;
   status: MemberStatus;
+  active_schools?: string[];
   created_at: string;
   updated_at: string;
 }
