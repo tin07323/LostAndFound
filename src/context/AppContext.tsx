@@ -64,7 +64,7 @@ interface AppContextType {
   resetAllData: () => void;
 }
 
-const STORAGE_KEY = 'lnf_school_platform_state_v2';
+const STORAGE_KEY = 'lnf_school_platform_state_v3';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -72,9 +72,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load state or default to initial
   const loadState = () => {
     try {
-      const raw = localStorage.getItem('lnf_school_platform_state_v2') || localStorage.getItem('lnf_school_platform_state_v1');
+      const raw =
+        localStorage.getItem('lnf_school_platform_state_v3') ||
+        localStorage.getItem('lnf_school_platform_state_v2') ||
+        localStorage.getItem('lnf_school_platform_state_v1');
       if (raw) {
         const parsed = JSON.parse(raw);
+
+        // Explicitly purge any legacy mock data IDs
+        const mockItemIds = new Set(['item-found-001', 'item-found-002', 'item-found-003', 'item-found-004']);
+        const mockReportIds = new Set(['report-lost-001', 'report-lost-002']);
+        const mockClaimIds = new Set(['claim-001']);
+        const mockReturnIds = new Set(['return-001']);
+        const mockProfileIds = new Set(['u-student-a-0002', 'u-student-b-0003', 'u-student-c-0004', 'u-admin-0001']);
+
+        parsed.foundItems = (parsed.foundItems || []).filter((item: FoundItem) => !mockItemIds.has(item.id));
+        parsed.lostReports = (parsed.lostReports || []).filter((r: LostReport) => !mockReportIds.has(r.id));
+        parsed.claims = (parsed.claims || []).filter((c: Claim) => !mockClaimIds.has(c.id));
+        parsed.returnInfoList = (parsed.returnInfoList || []).filter((ret: ReturnInformation) => !mockReturnIds.has(ret.id));
+        parsed.notifications = (parsed.notifications || []).filter((n: Notification) => !n.id?.startsWith('notif-'));
+        parsed.auditLogs = (parsed.auditLogs || []).filter((l: AuditLog) => !l.id?.startsWith('log-'));
+        parsed.profiles = (parsed.profiles || []).filter((p: Profile) => !mockProfileIds.has(p.id));
+
         // Clean out legacy hardcoded name if present
         if (parsed.schools && Array.isArray(parsed.schools)) {
           parsed.schools = parsed.schools.map((s: School) => {
@@ -205,11 +224,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ' };
     }
 
-    const matchedSchool = schools.find(
+    let matchedSchool = schools.find(
       (s) => s.join_code.trim().toUpperCase() === data.schoolCode.trim().toUpperCase()
     );
-    if (!matchedSchool) {
-      return { success: false, message: `รหัสโรงเรียน "${data.schoolCode}" ไม่ถูกต้อง (ตัวอย่าง: TPN-2026)` };
+    if (!matchedSchool && data.role === 'ADMIN') {
+      matchedSchool = {
+        id: `s-${Date.now()}`,
+        name: `โรงเรียน (${data.schoolCode.trim().toUpperCase()})`,
+        join_code: data.schoolCode.trim().toUpperCase(),
+        primary_color: '#2563EB',
+        default_pickup_location: 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+        meeting_locations: [
+          'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+          'ป้อมเจ้าหน้าที่รักษาความปลอดภัย ประตูหลัก',
+          'ห้องสมุดกลาง ชั้น 1',
+          'ห้องพักครูเวรประจำวัน'
+        ],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setSchools((prev) => [...prev, matchedSchool!]);
+    } else if (!matchedSchool) {
+      return { success: false, message: `รหัสโรงเรียน "${data.schoolCode}" ไม่ถูกต้อง (รหัสเริ่มต้นของระบบคือ ${schools[0]?.join_code || 'SCHOOL-2026'})` };
     }
 
     const newProfile: Profile = {
@@ -685,19 +721,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetAllData = () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('lnf_school_platform_state_v2');
+    localStorage.removeItem('lnf_school_platform_state_v1');
     localStorage.removeItem('lnf_current_user_id');
     setSchools(INITIAL_SCHOOLS);
-    setProfiles(INITIAL_PROFILES);
+    setProfiles([]);
     setCategories(INITIAL_CATEGORIES);
     setItemTypes(INITIAL_ITEM_TYPES);
-    setFoundItems(INITIAL_FOUND_ITEMS);
-    setLostReports(INITIAL_LOST_REPORTS);
-    setClaims(INITIAL_CLAIMS);
-    setReturnInfoList(INITIAL_RETURN_INFO);
-    setNotifications(INITIAL_NOTIFICATIONS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
+    setFoundItems([]);
+    setLostReports([]);
+    setClaims([]);
+    setReturnInfoList([]);
+    setNotifications([]);
+    setAuditLogs([]);
     setCurrentUserId(null);
-    setCurrentSchoolId('s1111111-aaaa-1111-aaaa-111111111111');
+    setCurrentSchoolId(INITIAL_SCHOOLS[0]?.id || 's1111111-aaaa-1111-aaaa-111111111111');
   };
 
   return (

@@ -23,6 +23,7 @@ import {
   supabaseUrl,
   supabaseAnonKey
 } from '../lib/supabase';
+import schemaSql from '../../supabase/schema.sql?raw';
 
 interface Props {
   isOpen: boolean;
@@ -385,8 +386,27 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOi...`}
                   <li>
                     <strong>สร้างตารางใน Supabase:</strong>
                     <p className="mt-1 pl-4 text-slate-500">
-                      เปิด Supabase Dashboard -&gt; ไปที่เมนู <strong>SQL Editor</strong> -&gt; เปิดไฟล์ <code>supabase/schema.sql</code> ในโปรเจกต์นี้ คัดลอกโค้ดทั้งหมดไปวางแล้วกดปุ่ม <strong>Run</strong>
+                      เปิด Supabase Dashboard -&gt; ไปที่เมนู <strong>SQL Editor</strong> -&gt; กด <strong>New query</strong> แล้วนำโค้ด SQL จากไฟล์ <code>supabase/schema.sql</code> ไปวางและกดปุ่ม <strong>Run</strong>
                     </p>
+                    <div className="mt-2 pl-4">
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(schemaSql, 'schema_sql')}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+                      >
+                        {copiedKey === 'schema_sql' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-300" />
+                            <span>คัดลอก SQL สร้างตารางเรียบร้อยแล้ว!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>คลิกเพื่อคัดลอก SQL สร้างตาราง (Copy Schema SQL)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </li>
 
                   <li>

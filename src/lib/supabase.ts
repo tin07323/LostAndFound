@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+export const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL || 'https://tflmevnnmrpclhhecfel.supabase.co';
+export const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  'sb_publishable_uB7vR3xDtAgLW-UYEpg9Ig_1-vCFoPl';
 
 // If Supabase URL and Anon Key are provided, create the real client
 export const supabase = (supabaseUrl && supabaseAnonKey)
@@ -31,8 +35,8 @@ export interface DatabaseStatus {
 }
 
 export async function testDatabaseConnection(): Promise<DatabaseStatus> {
-  const url = import.meta.env.VITE_SUPABASE_URL || '';
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+  const url = supabaseUrl;
+  const key = supabaseAnonKey;
 
   if (!url || !key || !supabase) {
     return {

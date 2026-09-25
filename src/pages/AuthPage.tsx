@@ -9,7 +9,6 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowRight,
   Database
 } from 'lucide-react';
@@ -95,15 +94,6 @@ export const AuthPage: React.FC = () => {
       setFeedback({ type: 'error', text: err.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก' });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleQuickDemoLogin = (profileId: string) => {
-    const target = profiles.find((p) => p.id === profileId);
-    if (target) {
-      setSignInEmail(target.email);
-      setSignInPassword('password123');
-      login(target.email);
     }
   };
 
@@ -273,43 +263,20 @@ export const AuthPage: React.FC = () => {
                 )}
               </button>
 
-              {/* Quick Demo Accounts for Evaluators / Teachers */}
-              <div className="pt-4 mt-6 border-t border-slate-800/80">
-                <p className="text-[11px] font-medium text-slate-400 mb-2.5 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>หรือทดสอบด่วนด้วยบัญชีตัวอย่าง (1-Click Test):</span>
+              <div className="pt-4 text-center">
+                <p className="text-xs text-slate-400">
+                  ยังไม่มีบัญชีผู้ใช้งานใช่หรือไม่?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab('signup');
+                      setFeedback(null);
+                    }}
+                    className="text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-2"
+                  >
+                    สมัครสมาชิกใหม่ที่นี่
+                  </button>
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('u-student-a-0002')}
-                    className="p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group"
-                  >
-                    <p className="text-xs font-bold text-slate-200 group-hover:text-blue-400">🎒 นักเรียน A (ผู้พบของ)</p>
-                    <p className="text-[10px] text-slate-500 truncate">student.a@school.ac.th</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('u-student-b-0003')}
-                    className="p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group"
-                  >
-                    <p className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">🎒 นักเรียน B (ผู้ขอรับ)</p>
-                    <p className="text-[10px] text-slate-500 truncate">student.b@school.ac.th</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('u-admin-0001')}
-                    className="col-span-2 p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-amber-300">👑 อาจารย์ฝ่ายกิจการนักเรียน (ผู้ดูแลระบบ - Admin)</p>
-                      <p className="text-[10px] text-slate-500">admin@school.ac.th • ตรวจสอบสิทธิ์ และตั้งค่าโรงเรียน/จุดนัดพบ</p>
-                    </div>
-                    <span className="text-[11px] px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800">
-                      เข้าใช้งาน
-                    </span>
-                  </button>
-                </div>
               </div>
             </form>
           )}
@@ -484,7 +451,7 @@ export const AuthPage: React.FC = () => {
         </div>
       </div>
 
-      {showDbModal && <DatabaseStatusModal onClose={() => setShowDbModal(false)} />}
+      {showDbModal && <DatabaseStatusModal isOpen={showDbModal} onClose={() => setShowDbModal(false)} />}
     </div>
   );
 };
