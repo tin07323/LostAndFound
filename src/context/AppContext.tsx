@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   Profile,
   School,
+  UserRole,
   Category,
   ItemType,
   FoundItem,
@@ -43,7 +44,7 @@ interface AppContextType {
   switchUser: (userId: string) => void;
   switchSchool: (schoolId: string) => void;
   joinSchool: (joinCode: string) => { success: boolean; message: string };
-  updateSchoolSettings: (schoolId: string, updates: Partial<School>) => void;
+  updateSchoolSettings: (schoolIdOrUpdates: string | Partial<School>, maybeUpdates?: Partial<School>) => void;
   createFoundItem: (data: any) => FoundItem;
   updateFoundItem: (itemId: string, updates: Partial<FoundItem>) => void;
   deleteFoundItem: (itemId: string) => void;
@@ -63,7 +64,7 @@ interface AppContextType {
   resetAllData: () => void;
 }
 
-const STORAGE_KEY = 'lnf_school_platform_state_v1';
+const STORAGE_KEY = 'lnf_school_platform_state_v2';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -71,8 +72,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load state or default to initial
   const loadState = () => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      const raw = localStorage.getItem('lnf_school_platform_state_v2') || localStorage.getItem('lnf_school_platform_state_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Clean out legacy hardcoded name if present
+        if (parsed.schools && Array.isArray(parsed.schools)) {
+          parsed.schools = parsed.schools.map((s: School) => {
+            const cleanName = s.name && s.name.includes('สาธิตเตรียมอุดม')
+              ? 'ระบบของหายในโรงเรียน (Lost & Found)'
+              : s.name;
+            return {
+              ...s,
+              name: cleanName,
+              default_pickup_location: s.default_pickup_location || 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+              meeting_locations: s.meeting_locations && s.meeting_locations.length > 0 ? s.meeting_locations : [
+                'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+                'ป้อมเจ้าหน้าที่รักษาความปลอดภัย ประตูหลัก',
+                'ห้องสมุดกลาง ชั้น 1',
+                'ห้องพักครูเวรประจำวัน'
+              ]
+            };
+          });
+        }
+        return parsed;
+      }
     } catch (e) {
       console.error('Failed to load local state:', e);
     }
@@ -139,7 +162,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const currentUser = currentUserId ? profiles.find((p) => p.id === currentUserId) || null : null;
   const isAuthenticated = Boolean(currentUser);
-  const currentSchool = schools.find((s) => s.id === currentSchoolId) || schools[0];
+  const currentSchoolRaw = schools.find((s) => s.id === currentSchoolId) || schools[0] || INITIAL_SCHOOLS[0];
+  const currentSchool: School = {
+    ...currentSchoolRaw,
+    name: currentSchoolRaw.name && currentSchoolRaw.name.includes('สาธิตเตรียมอุดม')
+      ? 'ระบบของหายในโรงเรียน (Lost & Found)'
+      : currentSchoolRaw.name,
+    default_pickup_location: currentSchoolRaw.default_pickup_location || 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+    meeting_locations: (currentSchoolRaw.meeting_locations && currentSchoolRaw.meeting_locations.length > 0)
+      ? currentSchoolRaw.meeting_locations
+      : [
+          'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+          'ป้อมเจ้าหน้าที่รักษาความปลอดภัย ประตูหลัก',
+          'ห้องสมุดกลาง ชั้น 1',
+          'ห้องพักครูเวรประจำวัน'
+        ]
+  };
 
   const login = async (email: string, _password?: string) => {
     const cleanEmail = email.trim().toLowerCase();
@@ -225,7 +263,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: `ยินดีต้อนรับสู่ ${target.name}` };
   };
 
-  const updateSchoolSettings = (schoolId: string, updates: Partial<School>) => {
+  const updateSchoolSettings = (schoolIdOrUpdates: string | Partial<School>, maybeUpdates?: Partial<School>) => {
+    const schoolId = typeof schoolIdOrUpdates === 'string' ? schoolIdOrUpdates : currentSchoolId;
+    const updates = typeof schoolIdOrUpdates === 'string' ? (maybeUpdates || {}) : schoolIdOrUpdates;
+
     setSchools((prev) =>
       prev.map((s) => (s.id === schoolId ? { ...s, ...updates, updated_at: new Date().toISOString() } : s))
     );
@@ -233,8 +274,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const log: AuditLog = {
       id: `log-${Date.now()}`,
       school_id: schoolId,
-      actor_id: currentUser.id,
-      actor_name: currentUser.display_name,
+      actor_id: currentUser ? currentUser.id : 'admin',
+      actor_name: currentUser ? currentUser.display_name : 'ผู้ดูแลระบบ',
       action: 'UPDATE_SCHOOL_SETTINGS',
       entity_type: 'schools',
       entity_id: schoolId,

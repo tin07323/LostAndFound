@@ -83,8 +83,8 @@ class SupabaseDataStore:
         s2 = "s2222222-bbbb-2222-bbbb-222222222222"
         self.schools[s1] = {
             "id": s1,
-            "name": "โรงเรียนสาธิตเตรียมอุดมวิทยาคม",
-            "join_code": "TPN-2026",
+            "name": "ระบบของหายในสถานศึกษา (Lost & Found)",
+            "join_code": "SCHOOL-2026",
             "logo_url": "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=160&auto=format&fit=crop&q=80",
             "primary_color": "#2563EB",
             "banner_url": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80",

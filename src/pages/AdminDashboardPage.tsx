@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Package,
@@ -16,7 +16,12 @@ import {
   Search,
   Check,
   Plus,
-  Database
+  Database,
+  MapPin,
+  School as SchoolIcon,
+  Trash2,
+  Building,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { StatusBadge } from '../components/StatusBadge';
@@ -64,10 +69,35 @@ export const AdminDashboardPage: React.FC = () => {
   const [rejectModalClaimId, setRejectModalClaimId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  // School theme form state
+  // School & Meeting Location form state
   const [schoolName, setSchoolName] = useState(currentSchool.name);
+  const [schoolJoinCode, setSchoolJoinCode] = useState(currentSchool.join_code);
   const [schoolColor, setSchoolColor] = useState(currentSchool.primary_color);
+  const [pickupLocation, setPickupLocation] = useState(
+    currentSchool.default_pickup_location || 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง'
+  );
+  const [meetingLocations, setMeetingLocations] = useState<string[]>(
+    currentSchool.meeting_locations && currentSchool.meeting_locations.length > 0
+      ? currentSchool.meeting_locations
+      : [
+          'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+          'ป้อมเจ้าหน้าที่รักษาความปลอดภัย ประตูหลัก',
+          'ห้องสมุดกลาง ชั้น 1',
+          'ห้องพักครูเวรประจำวัน'
+        ]
+  );
+  const [newLocationInput, setNewLocationInput] = useState('');
   const [themeSuccess, setThemeSuccess] = useState(false);
+
+  useEffect(() => {
+    setSchoolName(currentSchool.name);
+    setSchoolJoinCode(currentSchool.join_code);
+    setSchoolColor(currentSchool.primary_color);
+    setPickupLocation(currentSchool.default_pickup_location || 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง');
+    if (currentSchool.meeting_locations && currentSchool.meeting_locations.length > 0) {
+      setMeetingLocations(currentSchool.meeting_locations);
+    }
+  }, [currentSchool]);
 
   // Master data form states
   const [newCatName, setNewCatName] = useState('');
@@ -110,12 +140,27 @@ export const AdminDashboardPage: React.FC = () => {
 
   const handleSaveTheme = (e: React.FormEvent) => {
     e.preventDefault();
-    updateSchoolSettings({
+    updateSchoolSettings(currentSchool.id, {
       name: schoolName.trim(),
-      primary_color: schoolColor
+      join_code: schoolJoinCode.trim().toUpperCase(),
+      primary_color: schoolColor,
+      default_pickup_location: pickupLocation.trim(),
+      meeting_locations: meetingLocations
     });
     setThemeSuccess(true);
-    setTimeout(() => setThemeSuccess(false), 2000);
+    setTimeout(() => setThemeSuccess(false), 2500);
+  };
+
+  const handleAddMeetingLocation = () => {
+    if (!newLocationInput.trim()) return;
+    if (!meetingLocations.includes(newLocationInput.trim())) {
+      setMeetingLocations([...meetingLocations, newLocationInput.trim()]);
+    }
+    setNewLocationInput('');
+  };
+
+  const handleRemoveMeetingLocation = (locToRemove: string) => {
+    setMeetingLocations(meetingLocations.filter((l) => l !== locToRemove));
   };
 
   const handleAddCategory = (e: React.FormEvent) => {
@@ -191,8 +236,8 @@ export const AdminDashboardPage: React.FC = () => {
           {[
             { id: 'claims', label: `ตรวจสอบคำขอ (${pendingClaims.length})`, icon: CheckCircle2 },
             { id: 'returns', label: 'การนัดรับ & ส่งมอบ', icon: Clock },
+            { id: 'theme', label: '🏫 ตั้งค่าโรงเรียน & จุดนัดพบ', icon: SchoolIcon },
             { id: 'overview', label: 'ภาพรวมสถิติ', icon: Activity },
-            { id: 'theme', label: 'ตั้งค่า & ธีมโรงเรียน', icon: Palette },
             { id: 'users', label: 'จัดการผู้ใช้งาน', icon: Users },
             { id: 'master', label: 'หมวดหมู่ & ประเภทสิ่งของ', icon: Layers },
             { id: 'audit', label: 'Audit Logs', icon: Settings }
@@ -449,84 +494,222 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 4: SCHOOL THEME & CUSTOMIZATION */}
+        {/* TAB 4: SCHOOL & MEETING LOCATION SETTINGS */}
         {activeTab === 'theme' && (
-          <div className="max-w-2xl bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 mb-1">
-              <Palette className="w-5 h-5 text-blue-600" />
-              ปรับแต่งอัตลักษณ์ & ธีมของโรงเรียน (School Customizer)
-            </h2>
-            <p className="text-xs text-slate-500 mb-6">
-              ปรับเปลี่ยนชื่อโรงเรียน สีประจำสถาบัน และรหัสเข้าร่วม
-            </p>
-
-            <form onSubmit={handleSaveTheme} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  ชื่อสถานศึกษา:
-                </label>
-                <input
-                  type="text"
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+          <div className="space-y-6">
+            <div className="max-w-4xl bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
+                <div>
+                  <h2 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <SchoolIcon className="w-5 h-5 text-blue-600" />
+                    ตั้งค่าชื่อสถานศึกษา & สถานที่นัดพบ (School & Pickup Settings)
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    ผู้ดูแลระบบสามารถกำหนดชื่อโรงเรียน สถานที่นัดรับของส่วนกลาง และจุดนัดพบที่ปลอดภัยสำหรับนักเรียนได้ที่นี่
+                  </p>
+                </div>
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">
+                  <ShieldCheck className="w-3.5 h-3.5" /> สิทธิ์ผู้ดูแลระบบ
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  สีประจำโรงเรียน (Primary Brand Color):
-                </label>
-                <div className="flex items-center gap-3 mb-3">
-                  <input
-                    type="color"
-                    value={schoolColor}
-                    onChange={(e) => setSchoolColor(e.target.value)}
-                    className="w-10 h-10 rounded-xl cursor-pointer border border-slate-300 p-0.5"
-                  />
+              <form onSubmit={handleSaveTheme} className="space-y-6">
+                {/* 1. School Name */}
+                <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                  <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                    <Building className="w-4 h-4 text-blue-600" />
+                    ชื่อสถานศึกษา / โรงเรียน:
+                  </label>
+                  <p className="text-[11px] text-slate-500 mb-2">
+                    ชื่อนี้จะแสดงเป็นชื่อทางการของระบบ แถบเมนูด้านบน หน้าแรก และในเอกสาร/การส่งมอบของทั้งหมด
+                  </p>
                   <input
                     type="text"
-                    value={schoolColor}
-                    onChange={(e) => setSchoolColor(e.target.value)}
-                    className="px-3 py-2 text-xs font-mono rounded-xl border border-slate-300 uppercase"
+                    value={schoolName}
+                    onChange={(e) => setSchoolName(e.target.value)}
+                    placeholder="เช่น โรงเรียนสวนกุหลาบวิทยาลัย หรือ ระบบของหายในโรงเรียน..."
+                    className="w-full px-3.5 py-2.5 text-sm font-semibold text-slate-900 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    required
                   />
                 </div>
 
-                {/* Color Palettes */}
-                <div className="flex flex-wrap gap-2">
-                  {colorPalettes.map((p) => (
-                    <button
-                      key={p.color}
-                      type="button"
-                      onClick={() => setSchoolColor(p.color)}
-                      className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs flex items-center gap-1.5 hover:bg-slate-50 transition"
-                    >
+                {/* 2. Official Default Meeting & Pickup Point */}
+                <div className="bg-emerald-50/50 p-4 sm:p-5 rounded-2xl border border-emerald-200/80">
+                  <label className="block text-xs font-bold text-emerald-950 mb-1 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    สถานที่นัดพบส่วนกลาง / จุดส่งมอบคืนสิ่งของ (Official Meeting & Pickup Location) *
+                  </label>
+                  <p className="text-[11px] text-emerald-800/80 mb-2">
+                    จุดปลอดภัยส่วนกลางของโรงเรียนที่แอดมินกำหนดให้นักเรียนหรือผู้พบสิ่งของนัดรับส่งมอบของ (เช่น ห้องฝ่ายกิจการนักเรียน, ประชาสัมพันธ์, หรือป้อมยาม)
+                  </p>
+                  <input
+                    type="text"
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    placeholder="เช่น ห้องฝ่ายกิจการนักเรียน อาคาร 1 ชั้น 2 หรือ จุดประชาสัมพันธ์กลาง"
+                    className="w-full px-3.5 py-2.5 text-sm font-semibold text-slate-900 rounded-xl border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    required
+                  />
+                </div>
+
+                {/* 3. Recommended Meeting Points List */}
+                <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                  <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-blue-600" />
+                    รายการจุดนัดพบแนะนำในโรงเรียน (Recommended Meeting Spots Quick List):
+                  </label>
+                  <p className="text-[11px] text-slate-500 mb-3">
+                    สถานที่เหล่านี้จะปรากฏเป็นปุ่มลัด (Quick Chips) ให้ผู้พบของคลิกเลือกทันทีเมื่อทำเรื่องนัดส่งมอบของคืน
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {meetingLocations.map((loc) => (
                       <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: p.color }}
-                      />
-                      <span>{p.name}</span>
+                        key={loc}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-700 shadow-xs"
+                      >
+                        <MapPin className="w-3 h-3 text-emerald-600" />
+                        <span>{loc}</span>
+                        {meetingLocations.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMeetingLocation(loc)}
+                            className="p-0.5 text-slate-400 hover:text-rose-600 rounded transition ml-1"
+                            title="ลบจุดนี้ออก"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Add spot input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newLocationInput}
+                      onChange={(e) => setNewLocationInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddMeetingLocation();
+                        }
+                      }}
+                      placeholder="พิมพ์ชื่อสถานที่นัดพบเพิ่มเติม เช่น ป้อมยามประตู 2, ห้องสมุดชั้น 1..."
+                      className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddMeetingLocation}
+                      className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> เพิ่มจุดนัดพบ
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
-              {themeSuccess && (
-                <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl flex items-center gap-2 font-medium">
-                  <Check className="w-4 h-4" /> บันทึกการตั้งค่าธีมโรงเรียนเรียบร้อยแล้ว!
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 4. Join Code */}
+                  <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      รหัสประจำโรงเรียน (School Join Code):
+                    </label>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      รหัสที่ให้นักเรียนใช้ตอนสมัครสมาชิก
+                    </p>
+                    <input
+                      type="text"
+                      value={schoolJoinCode}
+                      onChange={(e) => setSchoolJoinCode(e.target.value.toUpperCase())}
+                      className="w-full px-3.5 py-2 text-xs font-mono font-bold uppercase rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      required
+                    />
+                  </div>
+
+                  {/* 5. Brand Color */}
+                  <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      สีประจำสถาบัน (Brand Color):
+                    </label>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      ปรับเปลี่ยนสีปุ่มและธีมของโรงเรียน
+                    </p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="color"
+                        value={schoolColor}
+                        onChange={(e) => setSchoolColor(e.target.value)}
+                        className="w-9 h-9 rounded-xl cursor-pointer border border-slate-300 p-0.5"
+                      />
+                      <input
+                        type="text"
+                        value={schoolColor}
+                        onChange={(e) => setSchoolColor(e.target.value)}
+                        className="w-28 px-3 py-2 text-xs font-mono rounded-xl border border-slate-300 uppercase bg-white"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {colorPalettes.slice(0, 5).map((p) => (
+                        <button
+                          key={p.color}
+                          type="button"
+                          onClick={() => setSchoolColor(p.color)}
+                          className="px-2 py-1 rounded-lg border border-slate-200 text-[10px] flex items-center gap-1 hover:bg-slate-100 transition bg-white"
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                          <span>{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition"
-                >
-                  บันทึกการตั้งค่า
-                </button>
-              </div>
-            </form>
+                {/* Live Preview Card */}
+                <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl border border-slate-700 shadow-md">
+                  <div className="flex items-center justify-between text-xs text-slate-400 mb-3 border-b border-slate-700 pb-2">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-300">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" /> ตัวอย่างการแสดงผลบนเว็บไซต์ (Live Preview)
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">Code: {schoolJoinCode || 'SCHOOL-2026'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-sm"
+                      style={{ backgroundColor: schoolColor }}
+                    >
+                      LF
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white">{schoolName || 'ชื่อโรงเรียนของคุณ'}</p>
+                      <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3" />
+                        <span>จุดนัดรับส่วนกลาง: <strong>{pickupLocation || 'ยังไม่ได้กำหนด'}</strong></span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {themeSuccess && (
+                  <div className="p-3.5 bg-emerald-50 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold border border-emerald-200">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    บันทึกการตั้งค่าชื่อโรงเรียนและสถานที่นัดพบเรียบร้อยแล้ว! ข้อมูลมีผลทั่วทั้งระบบทันที
+                  </div>
+                )}
+
+                <div className="pt-2 flex items-center gap-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" /> บันทึกการตั้งค่าทั้งหมด
+                  </button>
+                  <span className="text-xs text-slate-500">
+                    (การเปลี่ยนแปลงจะมีผลต่อผู้ใช้งานทุกคนในโรงเรียนนี้ทันที)
+                  </span>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

@@ -49,10 +49,10 @@ export const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold text-xs mb-3">ฝ่ายกิจการนักเรียน</h4>
+            <h4 className="text-white font-semibold text-xs mb-3">จุดบริการ & สถานที่ส่งมอบของ</h4>
             <p className="text-xs text-slate-400 leading-relaxed">
               หากพบสิ่งของมีค่าสูง เช่น เครื่องประดับ เงินสด หรือเอกสารสำคัญ
-              กรุณานำส่งที่ห้องฝ่ายกิจการนักเรียน อาคาร 1 ชั้น 2 ในวันและเวลาราชการ
+              กรุณานำส่งที่{currentSchool.default_pickup_location || 'จุดบริการส่วนกลางของโรงเรียน'} ในวันและเวลาราชการ
             </p>
             <p className="text-xs text-slate-500 mt-2">
               โทร: 02-XXX-XXXX ต่อ 102

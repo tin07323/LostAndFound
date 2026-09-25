@@ -3,21 +3,18 @@ import { Category, ItemType, School, Profile, FoundItem, LostReport, Claim, Retu
 export const INITIAL_SCHOOLS: School[] = [
   {
     id: 's1111111-aaaa-1111-aaaa-111111111111',
-    name: 'โรงเรียนสาธิตเตรียมอุดมวิทยาคม',
-    join_code: 'TPN-2026',
+    name: 'ระบบของหายในโรงเรียน (Lost & Found)',
+    join_code: 'SCHOOL-2026',
     logo_url: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=160&auto=format&fit=crop&q=80',
     primary_color: '#2563EB',
     banner_url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 's2222222-bbbb-2222-bbbb-222222222222',
-    name: 'โรงเรียนนานาชาติสยามวิทยพัฒน์',
-    join_code: 'SIAM-888',
-    logo_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=160&auto=format&fit=crop&q=80',
-    primary_color: '#059669',
-    banner_url: 'https://images.unsplash.com/photo-1562774053-701939374585?w=1200&auto=format&fit=crop&q=80',
+    default_pickup_location: 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+    meeting_locations: [
+      'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
+      'ป้อมเจ้าหน้าที่รักษาความปลอดภัย ประตูหลัก',
+      'ห้องสมุดกลาง ชั้น 1',
+      'ห้องพักครูเวรประจำวัน'
+    ],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
@@ -26,7 +23,7 @@ export const INITIAL_SCHOOLS: School[] = [
 export const INITIAL_PROFILES: Profile[] = [
   {
     id: 'u-student-a-0002',
-    email: 'student.a@tpn.ac.th',
+    email: 'student.a@school.ac.th',
     display_name: 'สมชาย รักการเรียน (ผู้แจ้งพบของ - Student A)',
     avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
     role: 'STUDENT',
@@ -36,7 +33,7 @@ export const INITIAL_PROFILES: Profile[] = [
   },
   {
     id: 'u-student-b-0003',
-    email: 'student.b@tpn.ac.th',
+    email: 'student.b@school.ac.th',
     display_name: 'กานดา สดใส (ผู้ขอรับของที่ได้รับอนุมัติ - Student B)',
     avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=160&auto=format&fit=crop&q=80',
     role: 'STUDENT',
@@ -46,7 +43,7 @@ export const INITIAL_PROFILES: Profile[] = [
   },
   {
     id: 'u-student-c-0004',
-    email: 'student.c@tpn.ac.th',
+    email: 'student.c@school.ac.th',
     display_name: 'ธนวัฒน์ ปรีชา (นักเรียนคนอื่น - Student C)',
     avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=160&auto=format&fit=crop&q=80',
     role: 'STUDENT',
@@ -56,8 +53,8 @@ export const INITIAL_PROFILES: Profile[] = [
   },
   {
     id: 'u-admin-0001',
-    email: 'admin@tpn.ac.th',
-    display_name: 'อาจารย์วิภาดา (แอดมินฝ่ายกิจการนักเรียน)',
+    email: 'admin@school.ac.th',
+    display_name: 'อาจารย์ฝ่ายกิจการนักเรียน (ผู้ดูแลระบบ - Admin)',
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=160&auto=format&fit=crop&q=80',
     role: 'ADMIN',
     status: 'ACTIVE',
@@ -247,10 +244,10 @@ export const INITIAL_RETURN_INFO: ReturnInformation[] = [
   {
     id: 'return-001',
     claim_id: 'claim-001',
-    pickup_location: 'ห้องฝ่ายกิจการนักเรียน อาคาร 1 ชั้น 2 (โต๊ะอาจารย์เวร)',
+    pickup_location: 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง',
     pickup_date: '2026-09-14',
     pickup_time: '15:30 - 16:30 น.',
-    contact_method: 'โทรแจ้ง 089-123-4567 หรือ LINE ID: somchai_st',
+    contact_method: 'โทรแจ้ง 089-123-4567 หรือ LINE ID: student_contact',
     notes: 'กรุณานำบัตรนักเรียนตัวจริงมาแสดงเพื่อยืนยันตัวตนต่อหน้าอาจารย์เวรด้วยนะครับ',
     created_by: 'u-student-a-0002',
     created_at: new Date(Date.now() - 3600000 * 16).toISOString(),
@@ -264,7 +261,7 @@ export const INITIAL_NOTIFICATIONS: Notification[] = [
     user_id: 'u-student-b-0003',
     type: 'RETURN_INFO_READY',
     title: 'มีข้อมูลนัดรับสิ่งของแล้ว!',
-    message: 'ผู้พบสิ่งของ AirPods Pro ได้ระบุสถานที่และเวลานัดรับเรียบร้อยแล้ว: ห้องฝ่ายกิจการนักเรียน อาคาร 1 ชั้น 2 (15:30 - 16:30 น.)',
+    message: 'ผู้พบสิ่งของ AirPods Pro ได้ระบุสถานที่และเวลานัดรับเรียบร้อยแล้ว: ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง (15:30 - 16:30 น.)',
     related_item_id: 'item-found-001',
     related_claim_id: 'claim-001',
     is_read: false,

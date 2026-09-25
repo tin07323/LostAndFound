@@ -32,6 +32,8 @@ export interface School {
   logo_url?: string;
   primary_color: string;
   banner_url?: string;
+  default_pickup_location?: string;
+  meeting_locations?: string[];
   created_at: string;
   updated_at: string;
 }

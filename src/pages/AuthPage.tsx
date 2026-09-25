@@ -35,7 +35,7 @@ export const AuthPage: React.FC = () => {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpRole, setSignUpRole] = useState<UserRole>('STUDENT');
-  const [signUpSchoolCode, setSignUpSchoolCode] = useState(currentSchool.join_code || 'TPN-2026');
+  const [signUpSchoolCode, setSignUpSchoolCode] = useState(currentSchool.join_code || 'SCHOOL-2026');
 
   // Status & Feedback
   const [loading, setLoading] = useState(false);
@@ -215,7 +215,7 @@ export const AuthPage: React.FC = () => {
                     required
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
-                    placeholder="เช่น 29923@tpn.ac.th หรือ student.a@tpn.ac.th"
+                    placeholder="เช่น student.a@school.ac.th หรือ admin@school.ac.th"
                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
@@ -286,7 +286,7 @@ export const AuthPage: React.FC = () => {
                     className="p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group"
                   >
                     <p className="text-xs font-bold text-slate-200 group-hover:text-blue-400">🎒 นักเรียน A (ผู้พบของ)</p>
-                    <p className="text-[10px] text-slate-500 truncate">student.a@tpn.ac.th</p>
+                    <p className="text-[10px] text-slate-500 truncate">student.a@school.ac.th</p>
                   </button>
                   <button
                     type="button"
@@ -294,7 +294,7 @@ export const AuthPage: React.FC = () => {
                     className="p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group"
                   >
                     <p className="text-xs font-bold text-slate-200 group-hover:text-emerald-400">🎒 นักเรียน B (ผู้ขอรับ)</p>
-                    <p className="text-[10px] text-slate-500 truncate">student.b@tpn.ac.th</p>
+                    <p className="text-[10px] text-slate-500 truncate">student.b@school.ac.th</p>
                   </button>
                   <button
                     type="button"
@@ -302,8 +302,8 @@ export const AuthPage: React.FC = () => {
                     className="col-span-2 p-2 text-left bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-slate-600 rounded-xl transition group flex items-center justify-between"
                   >
                     <div>
-                      <p className="text-xs font-bold text-amber-300">👑 อาจารย์วิภาดา (แอดมินฝ่ายกิจการ)</p>
-                      <p className="text-[10px] text-slate-500">admin@tpn.ac.th • ตรวจสอบและอนุมัติสิ่งของ</p>
+                      <p className="text-xs font-bold text-amber-300">👑 อาจารย์ฝ่ายกิจการนักเรียน (ผู้ดูแลระบบ - Admin)</p>
+                      <p className="text-[10px] text-slate-500">admin@school.ac.th • ตรวจสอบสิทธิ์ และตั้งค่าโรงเรียน/จุดนัดพบ</p>
                     </div>
                     <span className="text-[11px] px-2 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800">
                       เข้าใช้งาน
@@ -349,7 +349,7 @@ export const AuthPage: React.FC = () => {
                     required
                     value={signUpEmail}
                     onChange={(e) => setSignUpEmail(e.target.value)}
-                    placeholder="เช่น 29923@tpn.ac.th"
+                    placeholder="เช่น 29923@school.ac.th หรือ student@school.ac.th"
                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>
@@ -419,7 +419,7 @@ export const AuthPage: React.FC = () => {
                     รหัสประจำโรงเรียน (School Code)
                   </label>
                   <span className="text-[11px] text-blue-400 font-mono">
-                    ตัวอย่าง: TPN-2026
+                    รหัสปัจจุบัน: {currentSchool.join_code}
                   </span>
                 </div>
                 <div className="relative rounded-2xl shadow-sm">
@@ -431,7 +431,7 @@ export const AuthPage: React.FC = () => {
                     required
                     value={signUpSchoolCode}
                     onChange={(e) => setSignUpSchoolCode(e.target.value.toUpperCase())}
-                    placeholder="เช่น TPN-2026 หรือ SIAM-888"
+                    placeholder={`เช่น ${currentSchool.join_code || 'SCHOOL-2026'}`}
                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-800/80 border border-slate-700 rounded-xl text-sm text-white font-mono placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   />
                 </div>

@@ -26,6 +26,7 @@ export const FoundItemDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const {
     currentUser,
+    currentSchool,
     foundItems,
     claims,
     submitClaim,
@@ -44,7 +45,9 @@ export const FoundItemDetailPage: React.FC = () => {
 
   // Return Info Form Modal (for poster or admin)
   const [showReturnModal, setShowReturnModal] = useState(false);
-  const [pickupLocation, setPickupLocation] = useState('');
+  const [pickupLocation, setPickupLocation] = useState(
+    currentSchool?.default_pickup_location || 'ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์ส่วนกลาง'
+  );
   const [pickupDate, setPickupDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [contactMethod, setContactMethod] = useState('');
@@ -471,17 +474,50 @@ export const FoundItemDetailPage: React.FC = () => {
 
               <form onSubmit={handleSaveReturnInfo} className="mt-4 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    สถานที่นัดรับ (แนะนำให้นัดที่จุดปลอดภัย เช่น ห้องกิจการนักเรียน หรือป้อมยาม):
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      สถานที่นัดรับ (แนะนำให้นัดที่จุดปลอดภัยของโรงเรียน):
+                    </label>
+                    {currentSchool?.default_pickup_location && (
+                      <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-emerald-600" /> แนะนำโดยโรงเรียน
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={pickupLocation}
                     onChange={(e) => setPickupLocation(e.target.value)}
-                    placeholder="เช่น ห้องฝ่ายกิจการนักเรียน อาคาร 1 ชั้น 2"
+                    placeholder={currentSchool?.default_pickup_location || "เช่น ห้องฝ่ายกิจการนักเรียน / ประชาสัมพันธ์"}
                     className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     required
                   />
+
+                  {/* Admin configured meeting spots quick chips */}
+                  {currentSchool?.meeting_locations && currentSchool.meeting_locations.length > 0 && (
+                    <div className="mt-2 pt-1 border-t border-slate-100">
+                      <span className="text-[11px] text-slate-500 font-medium block mb-1">
+                        คลิกเลือกจุดนัดรับที่โรงเรียนกำหนดไว้:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {currentSchool.meeting_locations.map((loc) => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => setPickupLocation(loc)}
+                            className={`px-2 py-1 rounded-lg text-[11px] transition border flex items-center gap-1 ${
+                              pickupLocation === loc
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            <MapPin className="w-3 h-3 text-emerald-600" />
+                            <span>{loc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">

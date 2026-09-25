@@ -100,8 +100,8 @@ INSERT INTO public.schools (id, name, join_code, logo_url, primary_color, banner
 VALUES
     (
         's1111111-aaaa-1111-aaaa-111111111111',
-        'โรงเรียนสาธิตเตรียมอุดมวิทยาคม',
-        'TPN-2026',
+        'ระบบของหายในสถานศึกษา (Lost & Found)',
+        'SCHOOL-2026',
         'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=160&auto=format&fit=crop&q=80',
         '#2563EB',
         'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80'
